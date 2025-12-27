@@ -38,13 +38,13 @@ $(document).ready(function() {
     // Establecer fecha actual
     $('#fecha_mantenimiento').val(new Date().toISOString().split('T')[0]);
     
-    // Filtros de equipos
-    $('#searchEquipo').on('keyup', function() {
-        filtrarEquipos();
+    // Filtros de mantenimientos
+    $('#searchMantenimiento').on('keyup', function() {
+        filtrarMantenimientos();
     });
     
-    $('#filterEstado').on('change', function() {
-        filtrarEquipos();
+    $('#filterTipoDemanda').on('change', function() {
+        filtrarMantenimientos();
     });
     
     // Aplicar colores a los badges de estado
@@ -94,63 +94,74 @@ $(document).ready(function() {
     });
 });
 
-function filtrarEquipos() {
-    const searchText = $('#searchEquipo').val().toLowerCase();
-    const estadoId = $('#filterEstado').val();
+// Función obsoleta - Ya no se usa (ahora se usa filtrarMantenimientos)
+// function filtrarEquipos() {
+//     const searchText = $('#searchEquipo').val().toLowerCase();
+//     const estadoId = $('#filterEstado').val();
+//     
+//     $('.equipo-card').each(function() {
+//         const codigo = $(this).data('codigo').toLowerCase();
+//         const marca = $(this).data('marca').toLowerCase();
+//         const modelo = $(this).data('modelo').toLowerCase();
+//         const equipoEstadoId = $(this).data('estado-id').toString();
+//         
+//         const matchSearch = searchText === '' || 
+//                           codigo.includes(searchText) || 
+//                           marca.includes(searchText) || 
+//                           modelo.includes(searchText);
+//         
+//         const matchEstado = estadoId === '' || equipoEstadoId === estadoId;
+//         
+//         if (matchSearch && matchEstado) {
+//             $(this).show();
+//         } else {
+//             $(this).hide();
+//         }
+//     });
+// }
+
+function limpiarFiltrosMantenimientos() {
+    $('#searchMantenimiento').val('');
+    $('#filterTipoDemanda').val('');
+    filtrarMantenimientos();
+}
+
+function filtrarMantenimientos() {
+    const searchTerm = $('#searchMantenimiento').val().toLowerCase();
+    const tipoDemanda = $('#filterTipoDemanda').val();
     
-    $('.equipo-card').each(function() {
-        const codigo = $(this).data('codigo').toLowerCase();
-        const marca = $(this).data('marca').toLowerCase();
-        const modelo = $(this).data('modelo').toLowerCase();
-        const equipoEstadoId = $(this).data('estado-id').toString();
+    $('.mantenimiento-card').each(function() {
+        const $card = $(this);
+        const fecha = $card.find('.mant-fecha').text().toLowerCase();
+        const codigo = $card.find('.codigo').text().toLowerCase();
+        const descripcion = $card.find('.descripcion').text().toLowerCase();
+        const tecnico = $card.find('.info-item:first').text().toLowerCase();
+        const tipoId = $card.data('tipo').toString();
         
-        const matchSearch = searchText === '' || 
-                          codigo.includes(searchText) || 
-                          marca.includes(searchText) || 
-                          modelo.includes(searchText);
+        const matchSearch = !searchTerm || 
+                           fecha.includes(searchTerm) ||
+                           codigo.includes(searchTerm) ||
+                           descripcion.includes(searchTerm) ||
+                           tecnico.includes(searchTerm);
         
-        const matchEstado = estadoId === '' || equipoEstadoId === estadoId;
+        const matchTipo = !tipoDemanda || tipoId === tipoDemanda;
         
-        if (matchSearch && matchEstado) {
-            $(this).show();
+        if (matchSearch && matchTipo) {
+            $card.show();
         } else {
-            $(this).hide();
+            $card.hide();
         }
     });
 }
 
-function limpiarFiltrosEquipos() {
-    $('#searchEquipo').val('');
-    $('#filterEstado').val('');
-    filtrarEquipos();
+function verDetallesMantenimiento(id) {
+    // Abrir en modal o redirigir a ver.php (si tienes esa vista)
+    window.location.href = 'editar.php?id=' + id;
 }
 
 function seleccionarEquipo(id, codigo, descripcion, estadoId) {
-    // Obtener el nombre del estado
-    const estadoNombre = $(`.equipo-card[data-id="${id}"]`).data('estado');
-    
-    // Rellenar el modal con la información del equipo
-    $('#id_equipo').val(id);
-    $('#equipoCodigo').text(codigo);
-    $('#equipoDescripcion').text(descripcion);
-    $('#equipoEstadoActual').html(`<span class="estado-badge" data-estado-id="${estadoId}">${estadoNombre}</span>`);
-    
-    // Pre-seleccionar el estado anterior
-    $('#id_estado_anterior').val(estadoId);
-    
-    // Aplicar color al badge en el modal
-    aplicarColoresEstados();
-    
-    // Limpiar los demás campos
-    $('#id_tipo_demanda').val('');
-    $('#tecnico_responsable').val('');
-    $('#id_estado_nuevo').val('');
-    $('#descripcion').val('');
-    $('#observaciones').val('');
-    $('#fecha_mantenimiento').val(new Date().toISOString().split('T')[0]);
-    
-    // Abrir modal
-    $('#modalMantenimiento').modal('show');
+    // Redirigir a la página de crear mantenimiento con el equipo preseleccionado
+    window.location.href = 'crear.php?equipo=' + id;
 }
 
 function aplicarColoresEstados() {
@@ -217,127 +228,182 @@ function aplicarColoresEstados() {
 }
 
 function verHistorial() {
+    // Destruir DataTable si existe
+    if ($.fn.DataTable.isDataTable('#tablaHistorial')) {
+        $('#tablaHistorial').DataTable().destroy();
+    }
+    
     $('#modalHistorial').modal('show');
     
-    if (!$.fn.DataTable.isDataTable('#tablaHistorial')) {
-        $.ajax({
-            url: BASE_URL + '/controllers/mantenimientos.php',
-            method: 'GET',
-            data: { action: 'getAll' },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    const tbody = $('#tablaHistorial tbody');
-                    tbody.empty();
-                    
-                    response.data.forEach(function(mant) {
-                        const estadoAnterior = mant.estado_anterior ? 
-                            `<span class="estado-badge" data-estado-id="${mant.id_estado_anterior}">${mant.estado_anterior}</span>` : '-';
-                        const estadoNuevo = mant.estado_nuevo ? 
-                            `<span class="estado-badge" data-estado-id="${mant.id_estado_nuevo}">${mant.estado_nuevo}</span>` : '-';
-                        
-                        const row = `
-                            <tr>
-                                <td>${new Date(mant.fecha_mantenimiento).toLocaleDateString('es-ES')}</td>
-                                <td>
-                                    <strong>${mant.codigo_patrimonial}</strong><br>
-                                    <small>${mant.marca} ${mant.modelo}</small>
-                                </td>
-                                <td>${mant.tipo_demanda}</td>
-                                <td>${mant.tecnico_responsable || '-'}</td>
-                                <td>${estadoAnterior}</td>
-                                <td>${estadoNuevo}</td>
-                                <td>
-                                    <button onclick="verMantenimiento(${mant.id})" title="Ver" style="padding: 5px 10px; margin: 2px; background-color: #0d6efd; color: white; border: none; border-radius: 4px;">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button onclick="eliminarMantenimiento(${mant.id})" title="Eliminar" style="padding: 5px 10px; margin: 2px; background-color: #fd0d0dff; color: white; border: none; border-radius: 4px;">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                        tbody.append(row);
-                    });
-                    
-                    $('#tablaHistorial').DataTable({
-                        language: {
-                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-                        },
-                        order: [[0, 'desc']],
-                        pageLength: 25
-                    });
-                    
-                    aplicarColoresEstados();
+    // Mostrar loading
+    const tbody = $('#tablaHistorial tbody');
+    tbody.html('<tr><td colspan="7" style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+    
+    $.ajax({
+        url: BASE_URL + '/controllers/mantenimientos.php',
+        method: 'GET',
+        data: { action: 'getAll' },
+        dataType: 'json',
+        success: function(response) {
+            console.log('Respuesta historial:', response);
+            
+            if (response.success) {
+                tbody.empty();
+                
+                if (response.data.length === 0) {
+                    tbody.html('<tr><td colspan="7" style="text-align: center; padding: 20px; color: #6c757d;"><i class="fas fa-info-circle"></i> No hay mantenimientos registrados</td></tr>');
+                    return;
                 }
+                
+                response.data.forEach(function(mant) {
+                    const estadoAnterior = mant.estado_anterior ? 
+                        `<span class="estado-badge" data-estado-id="${mant.id_estado_anterior}">${mant.estado_anterior}</span>` : '-';
+                    const estadoNuevo = mant.estado_nuevo ? 
+                        `<span class="estado-badge" data-estado-id="${mant.id_estado_nuevo}">${mant.estado_nuevo}</span>` : '-';
+                    
+                    const row = `
+                        <tr>
+                            <td>${new Date(mant.fecha_mantenimiento).toLocaleDateString('es-ES')}</td>
+                            <td>
+                                <strong>${mant.codigo_patrimonial}</strong><br>
+                                <small>${mant.marca} ${mant.modelo}</small>
+                            </td>
+                            <td>${mant.tipo_demanda}</td>
+                            <td>${mant.tecnico_responsable || '-'}</td>
+                            <td>${estadoAnterior}</td>
+                            <td>${estadoNuevo}</td>
+                            <td>
+                                <button onclick="verMantenimiento(${mant.id})" title="Ver" style="padding: 5px 10px; margin: 2px; background-color: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="eliminarMantenimiento(${mant.id})" title="Eliminar" style="padding: 5px 10px; margin: 2px; background-color: #fd0d0dff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+                
+                $('#tablaHistorial').DataTable({
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                    },
+                    order: [[0, 'desc']],
+                    pageLength: 25
+                });
+                
+                aplicarColoresEstados();
+            } else {
+                tbody.html('<tr><td colspan="7" style="text-align: center; padding: 20px; color: #dc3545;"><i class="fas fa-exclamation-triangle"></i> ' + response.message + '</td></tr>');
             }
-        });
-    }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al cargar historial:', error);
+            console.error('Respuesta completa:', xhr.responseText);
+            tbody.html('<tr><td colspan="7" style="text-align: center; padding: 20px; color: #dc3545;"><i class="fas fa-exclamation-triangle"></i> Error al cargar el historial</td></tr>');
+        }
+    });
 }
 
 function verMantenimiento(id) {
+    console.log('Cargando mantenimiento ID:', id);
+    
     $.ajax({
         url: BASE_URL + '/controllers/mantenimientos.php',
         method: 'GET',
         data: { action: 'get', id: id },
         dataType: 'json',
         success: function(response) {
+            console.log('Respuesta detalle mantenimiento:', response);
+            
             if (response.success) {
                 const mant = response.data;
                 
+                // Validar que los datos existen
+                if (!mant) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se encontraron datos del mantenimiento',
+                        confirmButtonColor: '#dc3545'
+                    });
+                    return;
+                }
+                
                 const estadoAnterior = mant.estado_anterior ? 
-                    `<span class="estado-badge" data-estado-id="${mant.id_estado_anterior}">${mant.estado_anterior}</span>` : '-';
+                    `<span class="estado-badge" data-estado-id="${mant.id_estado_anterior}">${mant.estado_anterior}</span>` : 
+                    '<span style="color: #6c757d;">Sin cambio</span>';
                 const estadoNuevo = mant.estado_nuevo ? 
-                    `<span class="estado-badge" data-estado-id="${mant.id_estado_nuevo}">${mant.estado_nuevo}</span>` : '-';
+                    `<span class="estado-badge" data-estado-id="${mant.id_estado_nuevo}">${mant.estado_nuevo}</span>` : 
+                    '<span style="color: #6c757d;">Sin cambio</span>';
                 
                 let html = `
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
                         <div>
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Equipo:</label>
-                            <p><strong>${mant.codigo_patrimonial}</strong> - ${mant.marca} ${mant.modelo}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">📦 Equipo:</label>
+                            <p style="margin: 0;"><strong>${mant.codigo_patrimonial || 'N/A'}</strong><br>
+                            <small style="color: #6c757d;">${mant.marca || 'Sin marca'} ${mant.modelo || 'Sin modelo'}</small></p>
                         </div>
                         <div>
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Tipo de Demanda:</label>
-                            <p>${mant.tipo_demanda}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">🔧 Tipo de Demanda:</label>
+                            <p style="margin: 0;"><span style="padding: 4px 8px; background-color: #e3f2fd; color: #0277bd; border-radius: 4px; font-size: 0.9em;">${mant.tipo_demanda || 'No especificado'}</span></p>
                         </div>
                         <div>
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Fecha:</label>
-                            <p>${new Date(mant.fecha_mantenimiento).toLocaleDateString('es-ES')}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">📅 Fecha:</label>
+                            <p style="margin: 0;">${mant.fecha_mantenimiento ? new Date(mant.fecha_mantenimiento).toLocaleDateString('es-ES', {year: 'numeric', month: 'long', day: 'numeric'}) : 'No registrada'}</p>
                         </div>
                         <div>
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Técnico:</label>
-                            <p>${mant.tecnico_responsable || '-'}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">👨‍🔧 Técnico:</label>
+                            <p style="margin: 0;">${mant.tecnico_responsable || '<span style="color: #6c757d;">No asignado</span>'}</p>
                         </div>
                         <div>
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Estado Anterior:</label>
-                            <p>${estadoAnterior}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">📊 Estado Anterior:</label>
+                            <p style="margin: 0;">${estadoAnterior}</p>
                         </div>
                         <div>
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Estado Nuevo:</label>
-                            <p>${estadoNuevo}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">✅ Estado Nuevo:</label>
+                            <p style="margin: 0;">${estadoNuevo}</p>
                         </div>
                         <div style="grid-column: 1 / -1;">
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Descripción:</label>
-                            <p>${mant.descripcion || '-'}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">📝 Descripción:</label>
+                            <p style="margin: 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px; min-height: 40px;">${mant.descripcion || '<span style="color: #6c757d;">Sin descripción</span>'}</p>
                         </div>
                         <div style="grid-column: 1 / -1;">
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Observaciones:</label>
-                            <p>${mant.observaciones || '-'}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">💬 Observaciones:</label>
+                            <p style="margin: 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px; min-height: 40px;">${mant.observaciones || '<span style="color: #6c757d;">Sin observaciones</span>'}</p>
                         </div>
                         <div>
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Registrado por:</label>
-                            <p>${mant.usuario_registro || '-'}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">👤 Registrado por:</label>
+                            <p style="margin: 0;">${mant.usuario_registro || '<span style="color: #6c757d;">Desconocido</span>'}</p>
                         </div>
                         <div>
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Fecha de Registro:</label>
-                            <p>${new Date(mant.fecha_registro).toLocaleString('es-ES')}</p>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #495057;">🕐 Fecha de Registro:</label>
+                            <p style="margin: 0;">${mant.fecha_registro ? new Date(mant.fecha_registro).toLocaleString('es-ES', {year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'No registrada'}</p>
                         </div>
                     </div>
                 `;
                 $('#detallesMantenimiento').html(html);
                 aplicarColoresEstados();
                 $('#modalVerMantenimiento').modal('show');
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: response.message || 'No se pudo cargar el mantenimiento',
+                    confirmButtonColor: '#dc3545'
+                });
             }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al cargar mantenimiento:', error);
+            console.error('Respuesta completa:', xhr.responseText);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al cargar los detalles del mantenimiento',
+                confirmButtonColor: '#dc3545'
+            });
         }
     });
 }
@@ -384,8 +450,13 @@ function eliminarMantenimiento(id) {
 }
 
 function verDetallesEquipo(equipoId, codigo) {
+    console.log('Cargando detalles del equipo:', equipoId, codigo);
+    
     $('#equipoCodigoDetalle').text(codigo);
     $('#modalDetallesEquipo').modal('show');
+    
+    // Mostrar loading
+    $('#historialEquipo').html('<p style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Cargando historial...</p>');
     
     // Cargar historial de mantenimientos del equipo
     $.ajax({
@@ -394,6 +465,8 @@ function verDetallesEquipo(equipoId, codigo) {
         data: { action: 'getByEquipo', id_equipo: equipoId },
         dataType: 'json',
         success: function(response) {
+            console.log('Respuesta historial equipo:', response);
+            
             if (response.success && response.data.length > 0) {
                 let html = '<table style="width: 100%; border-collapse: collapse;">';
                 html += '<thead><tr style="border-bottom: 2px solid #ddd;">';
@@ -418,7 +491,7 @@ function verDetallesEquipo(equipoId, codigo) {
                     html += `<td style="padding: 10px;">${estadoAnterior}</td>`;
                     html += `<td style="padding: 10px;">${estadoNuevo}</td>`;
                     html += `<td style="padding: 10px; text-align: center;">
-                        <button onclick="verMantenimiento(${mant.id})" style="padding: 5px 10px; margin: 2px;">
+                        <button onclick="verMantenimiento(${mant.id})" title="Ver detalles" style="padding: 5px 10px; margin: 2px; background-color: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer;">
                             <i class="fas fa-eye"></i>
                         </button>
                     </td>`;
@@ -428,12 +501,15 @@ function verDetallesEquipo(equipoId, codigo) {
                 html += '</tbody></table>';
                 $('#historialEquipo').html(html);
                 aplicarColoresEstados();
+            } else if (response.success && response.data.length === 0) {
+                $('#historialEquipo').html('<p style="text-align: center; color: #6c757d; padding: 20px;"><i class="fas fa-info-circle"></i> No hay mantenimientos registrados para este equipo</p>');
             } else {
-                $('#historialEquipo').html('<p style="text-align: center; color: #999; padding: 20px;">No hay mantenimientos registrados para este equipo</p>');
+                $('#historialEquipo').html('<p style="text-align: center; color: #dc3545; padding: 20px;"><i class="fas fa-exclamation-triangle"></i> ' + (response.message || 'Error al cargar los datos') + '</p>');
             }
         },
         error: function(xhr, status, error) {
-            console.error('Error al cargar historial:', xhr.responseText);
+            console.error('Error al cargar historial:', error);
+            console.error('Respuesta completa:', xhr.responseText);
             let mensaje = 'Error al cargar el historial';
             try {
                 const response = JSON.parse(xhr.responseText);
@@ -443,7 +519,7 @@ function verDetallesEquipo(equipoId, codigo) {
             } catch(e) {
                 mensaje += ': ' + error;
             }
-            $('#historialEquipo').html(`<p style="text-align: center; color: #dc3545; padding: 20px;">${mensaje}</p>`);
+            $('#historialEquipo').html(`<p style="text-align: center; color: #dc3545; padding: 20px;"><i class="fas fa-exclamation-triangle"></i> ${mensaje}</p>`);
         }
     });
 }
@@ -637,8 +713,9 @@ input[type="text"]:focus, select:focus {
   border-color: var(--primary-color);
 }
 
-/* Grid de tarjetas */
-#equiposGrid {
+/* Grid de tarjetas (equipos y mantenimientos) */
+#equiposGrid,
+#mantenimientosGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 28px;
@@ -659,6 +736,68 @@ input[type="text"]:focus, select:focus {
 .equipo-card:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-lg);
+}
+
+/* Tarjetas de mantenimientos (no clickeables) */
+.mantenimiento-card {
+  cursor: default !important;
+  border-left: 4px solid var(--primary-color);
+}
+
+.mantenimiento-card:hover {
+  transform: translateY(-3px) !important;
+}
+
+/* Header del mantenimiento */
+.mant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mant-fecha {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mant-fecha i {
+  color: var(--primary-color);
+}
+
+/* Info adicional del mantenimiento */
+.mant-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  padding: 10px;
+  background: var(--bg-secondary, rgba(0,0,0,0.02));
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.info-item {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-item i {
+  color: var(--primary-color);
+  width: 16px;
+}
+
+.repuestos-count {
+  font-weight: 600;
+  color: var(--primary-color) !important;
 }
 
 .equipo-card img {
@@ -807,6 +946,30 @@ input[type="text"]:focus, select:focus {
     max-width: 1400px;
 }
 
+.btn-nuevo-mantenimiento {
+    background: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-nuevo-mantenimiento:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-nuevo-mantenimiento:active {
+    transform: translateY(0);
+}
+
 .content-wrapper {
     padding: 0px;
 }
@@ -818,62 +981,89 @@ input[type="text"]:focus, select:focus {
 </style>
 
 <div class="content-card">
-    <div>
-        <h4>
-            <i class="fas fa-tools"></i> Mantenimientos - Seleccione un Equipo
-        </h4>
-        <button onclick="verHistorial()" id="btnHistorial">
-            <i class="fas fa-history"></i> Ver Historial
-        </button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div>
+            <h4 style="margin-bottom: 5px;">
+                <i class="fas fa-tools"></i> Gestión de Mantenimientos
+            </h4>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">
+                <i class="fas fa-info-circle"></i> Listado de mantenimientos realizados
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="window.location.href='crear.php'" class="btn-nuevo-mantenimiento">
+                <i class="fas fa-plus-circle"></i> Nuevo Mantenimiento
+            </button>
+            <button onclick="window.location.href='listado.php'" class="btn-listado-completo" style="background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-file-export"></i> Exportar Datos
+            </button>
+            <button onclick="verHistorial()" id="btnHistorial">
+                <i class="fas fa-history"></i> Ver Historial
+            </button>
+        </div>
     </div>
 
     <!-- Filtros -->
     <div class="filters-grid">
         <div class="filter-group">
             <label>Buscar</label>
-            <input type="text" id="searchEquipo" placeholder="Código, marca, modelo...">
+            <input type="text" id="searchMantenimiento" placeholder="Código equipo, técnico...">
         </div>
         <div class="filter-group">
-            <label>Estado</label>
-            <select id="filterEstado">
+            <label>Tipo de Demanda</label>
+            <select id="filterTipoDemanda">
                 <option value="">Todos</option>
-                <?php foreach ($estados as $estado): ?>
-                <option value="<?php echo $estado['id']; ?>"><?php echo htmlspecialchars($estado['nombre']); ?></option>
+                <?php foreach ($tipos_demanda as $tipo): ?>
+                <option value="<?php echo $tipo['id']; ?>"><?php echo htmlspecialchars($tipo['nombre']); ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
         <div class="filter-group filter-group-button">
-        <label>&nbsp;</label> 
-                   <button onclick="limpiarFiltrosEquipos()" class="btn-clear">
+            <label>&nbsp;</label> 
+            <button onclick="limpiarFiltrosMantenimientos()" class="btn-clear">
                 <i class="fas fa-times"></i> Limpiar
             </button>
         </div>
     </div>
 
-    <!-- Grid de tarjetas -->
-    <div id="equiposGrid">
-        <?php foreach ($equipos as $equipo): ?>
+    <!-- Grid de mantenimientos -->
+    <div id="mantenimientosGrid">
+        <?php foreach ($mantenimientos as $mant): ?>
         <?php
-            $codigo = $equipo['codigo_patrimonial'] ?? 'Sin código';
-            $marca = $equipo['marca'] ?? '';
-            $modelo = $equipo['modelo'] ?? '';
-            $estado = $equipo['estado'] ?? 'Sin estado';
-            $id_estado = $equipo['id_estado'] ?? 0;
+            $codigo = $mant['codigo_patrimonial'] ?? 'Sin código';
+            $marca = $mant['marca'] ?? '';
+            $modelo = $mant['modelo'] ?? '';
+            $fecha = date('d/m/Y', strtotime($mant['fecha_mantenimiento']));
+            $tecnico = $mant['tecnico_responsable'] ?? 'No especificado';
+            $tipo = $mant['tipo_demanda'] ?? 'Sin tipo';
             $descripcion = trim($marca . ' ' . $modelo);
             if (empty($descripcion)) $descripcion = 'Sin descripción';
+            $cantidad_repuestos = $mant['cantidad_repuestos'] ?? 0;
         ?>
-        <div class="equipo-card" 
-             data-id="<?php echo $equipo['id']; ?>"
-             data-codigo="<?php echo htmlspecialchars($codigo); ?>"
-             data-marca="<?php echo htmlspecialchars($marca); ?>"
-             data-modelo="<?php echo htmlspecialchars($modelo); ?>"
-             data-estado-id="<?php echo $id_estado; ?>"
-             data-estado="<?php echo htmlspecialchars($estado); ?>"
-             onclick="seleccionarEquipo(<?php echo $equipo['id']; ?>, '<?php echo htmlspecialchars($codigo); ?>', '<?php echo htmlspecialchars($descripcion); ?>', <?php echo $id_estado; ?>)">
+        <div class="equipo-card mantenimiento-card" 
+             data-id="<?php echo $mant['id']; ?>"
+             data-fecha="<?php echo $mant['fecha_mantenimiento']; ?>"
+             data-tipo="<?php echo $mant['id_tipo_demanda']; ?>">
+            
+            <div class="mant-header">
+                <span class="mant-fecha"><i class="fas fa-calendar"></i> <?php echo $fecha; ?></span>
+                <span class="badge bg-info"><?php echo htmlspecialchars($tipo); ?></span>
+            </div>
             
             <div>
-                <?php if (!empty($equipo['imagen'])): ?>
-                    <?php $imagenUrl = (strpos($equipo['imagen'], 'uploads/') === 0) ? BASE_URL . '/' . $equipo['imagen'] : BASE_URL . '/uploads/' . $equipo['imagen']; ?>
+                <?php
+                // Buscar la imagen del equipo
+                $imagenUrl = '';
+                foreach ($equipos as $eq) {
+                    if ($eq['id'] == $mant['id_equipo']) {
+                        if (!empty($eq['imagen'])) {
+                            $imagenUrl = (strpos($eq['imagen'], 'uploads/') === 0) ? BASE_URL . '/' . $eq['imagen'] : BASE_URL . '/uploads/' . $eq['imagen'];
+                        }
+                        break;
+                    }
+                }
+                ?>
+                <?php if ($imagenUrl): ?>
                     <img src="<?php echo $imagenUrl; ?>" 
                          alt="<?php echo htmlspecialchars($codigo); ?>" 
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
@@ -885,18 +1075,24 @@ input[type="text"]:focus, select:focus {
             
             <div class="codigo"><?php echo htmlspecialchars($codigo); ?></div>
             <div class="descripcion"><?php echo htmlspecialchars($descripcion); ?></div>
-            <div class="estado-badge" data-estado-id="<?php echo $id_estado; ?>">
-                <?php echo htmlspecialchars($estado); ?>
+            
+            <div class="mant-info">
+                <div class="info-item">
+                    <i class="fas fa-user"></i> <?php echo htmlspecialchars($tecnico); ?>
+                </div>
+                <div class="info-item repuestos-count">
+                    <i class="fas fa-boxes"></i> <?php echo $cantidad_repuestos; ?> repuesto(s)
+                </div>
             </div>
             
             <div class="actions">
                 <button class="btn-action btn-details" 
-                        onclick="event.stopPropagation(); verDetallesEquipo(<?php echo $equipo['id']; ?>, '<?php echo htmlspecialchars($codigo); ?>');">
+                        onclick="verDetallesMantenimiento(<?php echo $mant['id']; ?>);">
                     <i class="fas fa-info-circle"></i> Detalles
                 </button>
-                <button class="btn-action btn-status" 
-                        onclick="event.stopPropagation(); cambiarEstadoEquipo(<?php echo $equipo['id']; ?>, '<?php echo htmlspecialchars($codigo); ?>', <?php echo $id_estado; ?>);">
-                    <i class="fas fa-exchange-alt"></i> Estado
+                <button class="btn-action btn-edit" 
+                        onclick="window.location.href='editar.php?id=<?php echo $mant['id']; ?>';">
+                    <i class="fas fa-edit"></i> Editar
                 </button>
             </div>
         </div>
@@ -914,7 +1110,7 @@ input[type="text"]:focus, select:focus {
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="formMantenimiento" method="POST" action="<?php echo BASE_URL; ?>/controllers/mantenimientos.php">
+            <form id="formMantenimiento" method="POST" action="<?php echo BASE_URL; ?>/controllers/mantenimientos.php" accept-charset="UTF-8">
                 <input type="hidden" name="action" value="create">
                 <input type="hidden" name="id_equipo" id="id_equipo">
                 
@@ -1122,3 +1318,4 @@ input[type="text"]:focus, select:focus {
 <?php
 include __DIR__ . '/../../includes/footer.php';
 ?>
+Notice: session_start(): Ignoring session_start() because a session is already active in C:\xampp\htdocs\impresoras\views\mantenimientos\crear.php on line 10

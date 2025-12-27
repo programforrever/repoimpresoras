@@ -272,7 +272,7 @@ function getDistritos() {
     $stmt = $db->query("SELECT id, nombre FROM distritos_fiscales WHERE activo = 1 ORDER BY nombre");
     $distritos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     echo json_encode($distritos);
 }
 
@@ -285,7 +285,7 @@ function getSedes() {
     $stmt = $db->query("SELECT id, nombre FROM sedes WHERE activo = 1 ORDER BY nombre");
     $sedes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     echo json_encode($sedes);
 }
 
@@ -298,6 +298,6 @@ function getMarcas() {
     $stmt = $db->query("SELECT id, nombre FROM marcas WHERE activo = 1 ORDER BY nombre");
     $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     echo json_encode($marcas);
 }

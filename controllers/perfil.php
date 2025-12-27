@@ -35,7 +35,7 @@ try {
 }
 
 function actualizarPerfil($db) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     $idUsuario = $_SESSION['user_id'];
     
@@ -107,7 +107,7 @@ function actualizarPerfil($db) {
 }
 
 function cambiarPassword($db) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     $idUsuario = $_SESSION['user_id'];
     $passwordActual = $_POST['password_actual'] ?? '';

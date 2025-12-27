@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Select</title>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+</head>
+<body>
+    <h2>Test de Select y Botón</h2>
+    
+    <label>Tipo de Importación:</label>
+    <select id="tipoImportacion">
+        <option value="">Seleccione...</option>
+        <option value="marcas">Marcas</option>
+        <option value="modelos">Modelos</option>
+        <option value="equipos">Equipos</option>
+    </select>
+    
+    <br><br>
+    
+    <button id="btnDescargarPlantilla" disabled>Descargar Plantilla</button>
+    
+    <div id="log" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+    
+    <script>
+    $(document).ready(function() {
+        $('#log').append('<p>✅ jQuery cargado</p>');
+        
+        $('#tipoImportacion').on('change', function() {
+            const tipo = $(this).val();
+            $('#log').append('<p>Cambio detectado. Valor: ' + tipo + '</p>');
+            
+            if (tipo) {
+                $('#btnDescargarPlantilla').prop('disabled', false);
+                $('#log').append('<p>✅ Botón habilitado</p>');
+            } else {
+                $('#btnDescargarPlantilla').prop('disabled', true);
+                $('#log').append('<p>❌ Botón deshabilitado</p>');
+            }
+        });
+        
+        $('#btnDescargarPlantilla').on('click', function() {
+            const tipo = $('#tipoImportacion').val();
+            $('#log').append('<p>🔽 Click en descargar. Tipo: ' + tipo + '</p>');
+            window.location.href = 'controllers/importacion.php?action=descargarPlantilla&tipo=' + tipo;
+        });
+    });
+    </script>
+</body>
+</html>

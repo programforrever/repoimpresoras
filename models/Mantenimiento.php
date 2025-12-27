@@ -15,13 +15,16 @@ class Mantenimiento {
      * Obtener todos los mantenimientos
      */
     public function getAll($filters = [], $limit = null, $offset = 0) {
+        // Verificar si existe la columna activo
+        $hasActivoColumn = $this->hasActivoColumn();
+        
         $sql = "SELECT m.*, 
                 e.codigo_patrimonial, e.marca, e.modelo,
                 td.nombre as tipo_demanda,
                 ea.nombre as estado_anterior,
                 en.nombre as estado_nuevo,
                 u.nombre_completo as registrado_por,
-                (SELECT COUNT(*) FROM repuestos WHERE id_mantenimiento = m.id) as cantidad_repuestos
+                (SELECT COUNT(*) FROM mantenimientos_repuestos WHERE id_mantenimiento = m.id) as cantidad_repuestos
                 FROM " . $this->table . " m
                 INNER JOIN equipos e ON m.id_equipo = e.id
                 LEFT JOIN tipos_demanda td ON m.id_tipo_demanda = td.id
@@ -29,6 +32,11 @@ class Mantenimiento {
                 LEFT JOIN estados_equipo en ON m.id_estado_nuevo = en.id
                 LEFT JOIN usuarios u ON m.id_usuario_registro = u.id
                 WHERE 1=1";
+        
+        // Solo agregar filtro de activo si la columna existe
+        if ($hasActivoColumn) {
+            $sql .= " AND m.activo = 1";
+        }
         
         // Aplicar filtros
         if (!empty($filters['id_equipo'])) {
@@ -74,12 +82,33 @@ class Mantenimiento {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    /**
+     * Verificar si existe la columna activo
+     */
+    private function hasActivoColumn() {
+        try {
+            $sql = "SHOW COLUMNS FROM " . $this->table . " LIKE 'activo'";
+            $stmt = $this->conn->query($sql);
+            return $stmt->rowCount() > 0;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
 
     /**
      * Contar mantenimientos
      */
     public function count($filters = []) {
+        // Verificar si existe la columna activo
+        $hasActivoColumn = $this->hasActivoColumn();
+        
         $sql = "SELECT COUNT(*) FROM " . $this->table . " m WHERE 1=1";
+        
+        // Solo agregar filtro de activo si la columna existe
+        if ($hasActivoColumn) {
+            $sql .= " AND m.activo = 1";
+        }
         
         if (!empty($filters['id_equipo'])) {
             $sql .= " AND m.id_equipo = :id_equipo";
@@ -118,11 +147,14 @@ class Mantenimiento {
      */
     public function getById($id) {
         $sql = "SELECT m.*, 
-                e.codigo_patrimonial, e.marca, e.modelo,
+                e.codigo_patrimonial, 
+                e.marca, 
+                e.modelo,
                 td.nombre as tipo_demanda,
                 ea.nombre as estado_anterior,
                 en.nombre as estado_nuevo,
-                u.nombre_completo as registrado_por
+                u.nombre_completo as usuario_registro,
+                m.fecha_creacion as fecha_registro
                 FROM " . $this->table . " m
                 INNER JOIN equipos e ON m.id_equipo = e.id
                 LEFT JOIN tipos_demanda td ON m.id_tipo_demanda = td.id

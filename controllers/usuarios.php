@@ -17,7 +17,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // Verificar autenticación y permisos
 if (!isLoggedIn() || !hasRole(ROL_ADMIN)) {
     http_response_code(403);
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     echo json_encode(['error' => 'Acceso denegado']);
     exit;
 }
@@ -287,7 +287,7 @@ function eliminarUsuario() {
 function obtenerPerfilUsuario() {
     global $usuarioModel, $db;
     
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     try {
         $id = intval($_GET['id']);

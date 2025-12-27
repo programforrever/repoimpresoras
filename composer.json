@@ -1,0 +1,14 @@
+{
+    "name": "sistema/impresoras",
+    "description": "Sistema de gestión de impresoras con importación masiva",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "phpoffice/phpspreadsheet": "^1.29"
+    },
+    "autoload": {
+        "psr-4": {
+            "Models\\": "models/"
+        }
+    }
+}

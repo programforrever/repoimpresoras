@@ -385,10 +385,74 @@ $(document).ready(function() {
     console.log('Selector #id_marca existe:', $('#id_marca').length > 0);
     console.log('Selector #id_modelo existe:', $('#id_modelo').length > 0);
     
-    // Inicializar DataTable
+    // Inicializar DataTable con botones de exportación
     $('#tablaEquipos').DataTable({
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12 col-md-12"B>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        buttons: [
+            {
+                extend: 'copy',
+                text: '<i class="fas fa-copy"></i> Copiar',
+                className: 'btn btn-secondary btn-sm',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'excel',
+                text: '<i class="fas fa-file-excel"></i> Excel',
+                className: 'btn btn-success btn-sm',
+                title: 'Listado de Equipos',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'pdf',
+                text: '<i class="fas fa-file-pdf"></i> PDF',
+                className: 'btn btn-danger btn-sm',
+                title: 'Listado de Equipos',
+                orientation: 'landscape',
+                pageSize: 'LEGAL',
+                exportOptions: {
+                    columns: ':visible'
+                },
+                customize: function(doc) {
+                    doc.content[1].table.widths = Array(doc.content[1].table.body[0].length + 1).join('*').split('');
+                    doc.styles.tableHeader.fillColor = '#4a90e2';
+                }
+            },
+            {
+                extend: 'print',
+                text: '<i class="fas fa-print"></i> Imprimir',
+                className: 'btn btn-info btn-sm',
+                title: 'Listado de Equipos',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'colvis',
+                text: '<i class="fas fa-columns"></i> Columnas',
+                className: 'btn btn-warning btn-sm'
+            }
+        ],
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json',
+            buttons: {
+                copy: 'Copiar',
+                excel: 'Excel',
+                pdf: 'PDF',
+                print: 'Imprimir',
+                colvis: 'Visibilidad de columnas',
+                copyTitle: 'Copiado al portapapeles',
+                copySuccess: {
+                    _: '%d filas copiadas',
+                    1: '1 fila copiada'
+                }
+            }
         },
         pageLength: 25,
         order: [[0, 'asc']]

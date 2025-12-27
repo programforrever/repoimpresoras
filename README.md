@@ -11,13 +11,32 @@ Sistema web desarrollado en PHP 8.2 y MySQL para el control y gestión integral 
 - ✅ Estados de equipos (operativo, en mantenimiento, inoperativo, etc.)
 - ✅ Datos de garantía y año de adquisición
 - ✅ Asignación a usuarios finales y ubicaciones
+- ✅ **Importación masiva desde Excel**
 
 ### Gestión de Mantenimientos
 - ✅ Registro detallado de mantenimientos preventivos y correctivos
-- ✅ Control de repuestos utilizados
+- ✅ Control de repuestos utilizados con gestión de stock
 - ✅ Tipos de demanda (preventivo, correctivo, emergencia)
 - ✅ Seguimiento de técnicos responsables
 - ✅ Historial completo por equipo
+- ✅ Listado visual con contador de repuestos
+
+### Gestión de Repuestos
+- ✅ Catálogo completo de repuestos con stock
+- ✅ Control de compatibilidad por marca y modelo
+- ✅ Registro de movimientos (entrada/salida/ajuste)
+- ✅ Validación de stock en mantenimientos
+- ✅ Historial de uso por repuesto
+
+### Importación Masiva (Nuevo)
+- ✅ **Carga masiva de Marcas desde Excel**
+- ✅ **Carga masiva de Modelos desde Excel**
+- ✅ **Carga masiva de Equipos desde Excel**
+- ✅ Interfaz drag-and-drop
+- ✅ Plantillas Excel descargables con ejemplos
+- ✅ Previsualización de datos antes de importar
+- ✅ Actualización automática de registros existentes
+- ✅ Reporte detallado con errores por fila
 
 ### Sistema de Reportes
 - ✅ Reportes estadísticos con gráficos interactivos (ApexCharts)
@@ -29,7 +48,7 @@ Sistema web desarrollado en PHP 8.2 y MySQL para el control y gestión integral 
 ### Administración
 - ✅ Sistema de autenticación con roles (Administrador, Encargado, Usuario)
 - ✅ Gestión de usuarios del sistema
-- ✅ Auditoría completa de operaciones (crear, modificar, eliminar)
+- ✅ Auditoría completa de operaciones (crear, modificar, eliminar, importar)
 - ✅ Dashboard con estadísticas en tiempo real
 - ✅ Gestión de ubicaciones (distritos fiscales, sedes, despachos, macro procesos)
 
@@ -52,8 +71,23 @@ Sistema web desarrollado en PHP 8.2 y MySQL para el control y gestión integral 
 - ✅ PDO_MySQL
 - ✅ mbstring
 - ✅ json
-- ✅ gd (opcional, para procesamiento de imágenes avanzado)
-- ✅ zip (opcional, para exportación Excel avanzada)
+- ✅ **gd** (requerida para importación Excel)
+- ✅ **zip** (requerida para importación Excel)
+- ✅ **xml** (requerida para importación Excel)
+- ✅ **xmlreader** (requerida para importación Excel)
+
+### Dependencias PHP (Composer)
+```json
+{
+    "phpoffice/phpspreadsheet": "^1.29"
+}
+```
+
+Instalación:
+```bash
+cd c:\xampp\htdocs\impresoras
+composer install
+```
 
 ### Navegadores Soportados
 - Chrome 90+

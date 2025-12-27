@@ -43,7 +43,7 @@ try {
 }
 
 function listarAuditoria($db) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     $usuario = $_GET['usuario'] ?? null;
     $tabla = $_GET['tabla'] ?? null;
@@ -121,7 +121,7 @@ function listarAuditoria($db) {
 }
 
 function detalleAuditoria($db) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     $id = $_GET['id'] ?? null;
     
@@ -161,7 +161,7 @@ function detalleAuditoria($db) {
 }
 
 function timelineUsuario($db) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     $usuario = $_GET['usuario'] ?? null;
     

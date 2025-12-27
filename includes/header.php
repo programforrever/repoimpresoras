@@ -31,6 +31,7 @@ if (!isLoggedIn()) {
     
     <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet">
     
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
@@ -72,6 +73,14 @@ if (!isLoggedIn()) {
             
             <a href="<?php echo BASE_URL; ?>/views/mantenimientos/index.php" class="<?php echo strpos($_SERVER['PHP_SELF'], 'mantenimientos') !== false ? 'active' : ''; ?>">
                 <i class="fas fa-wrench"></i> Mantenimientos
+            </a>
+            
+            <a href="<?php echo BASE_URL; ?>/views/repuestos/index.php" class="<?php echo strpos($_SERVER['PHP_SELF'], 'repuestos') !== false ? 'active' : ''; ?>">
+                <i class="fas fa-boxes"></i> Repuestos
+            </a>
+            
+            <a href="<?php echo BASE_URL; ?>/views/importacion/index.php" class="<?php echo strpos($_SERVER['PHP_SELF'], 'importacion') !== false ? 'active' : ''; ?>">
+                <i class="fas fa-file-excel"></i> Importación Masiva
             </a>
             
             <a href="<?php echo BASE_URL; ?>/views/reportes/index.php" class="<?php echo strpos($_SERVER['PHP_SELF'], 'reportes') !== false ? 'active' : ''; ?>">

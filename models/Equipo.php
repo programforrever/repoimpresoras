@@ -313,6 +313,17 @@ class Equipo {
     }
 
     /**
+     * Cambiar estado del equipo
+     */
+    public function cambiarEstado($id, $id_estado) {
+        $sql = "UPDATE " . $this->table . " SET id_estado = :id_estado WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':id_estado', $id_estado);
+        return $stmt->execute();
+    }
+
+    /**
      * Verificar si existe código patrimonial
      */
     public function codigoExists($codigo, $exclude_id = null) {

@@ -3,6 +3,10 @@
  * Controlador de Mantenimientos
  */
 
+// Configurar codificación UTF-8
+ini_set('default_charset', 'UTF-8');
+mb_internal_encoding('UTF-8');
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/Mantenimiento.php';
@@ -22,6 +26,19 @@ if (!isLoggedIn()) {
 $database = new Database();
 $db = $database->getConnection();
 $mantenimientoModel = new Mantenimiento($db);
+
+/**
+ * Verificar si existe la columna activo en la tabla mantenimientos
+ */
+function hasActivoColumn($db) {
+    try {
+        $sql = "SHOW COLUMNS FROM mantenimientos LIKE 'activo'";
+        $stmt = $db->query($sql);
+        return $stmt->rowCount() > 0;
+    } catch (Exception $e) {
+        return false;
+    }
+}
 
 $action = $_REQUEST['action'] ?? '';
 
@@ -62,7 +79,7 @@ switch ($action) {
 function crearMantenimiento() {
     global $mantenimientoModel, $db;
     
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     try {
         $data = [
@@ -114,7 +131,7 @@ function crearMantenimiento() {
 function actualizarMantenimiento() {
     global $mantenimientoModel, $db;
     
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     try {
         $id = intval($_POST['id']);
@@ -171,15 +188,25 @@ function actualizarMantenimiento() {
 function obtenerMantenimiento() {
     global $mantenimientoModel;
     
-    $id = $_GET['id'] ?? null;
+    header('Content-Type: application/json; charset=UTF-8');
     
-    if ($id) {
+    try {
+        $id = $_GET['id'] ?? null;
+        
+        if (!$id) {
+            throw new Exception('ID no proporcionado');
+        }
+        
         $mantenimiento = $mantenimientoModel->getById($id);
-        header('Content-Type: application/json');
-        echo json_encode($mantenimiento);
-    } else {
-        http_response_code(400);
-        echo json_encode(['error' => 'ID no proporcionado']);
+        
+        if ($mantenimiento) {
+            echo json_encode(['success' => true, 'data' => $mantenimiento]);
+        } else {
+            throw new Exception('Mantenimiento no encontrado');
+        }
+    } catch (Exception $e) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
 
@@ -188,6 +215,8 @@ function obtenerMantenimiento() {
  */
 function obtenerTodosMantenimientos() {
     global $mantenimientoModel;
+    
+    header('Content-Type: application/json; charset=UTF-8');
     
     try {
         $mantenimientos = $mantenimientoModel->getAll();
@@ -204,7 +233,7 @@ function obtenerTodosMantenimientos() {
 function obtenerMantenimientosPorEquipo() {
     global $db;
     
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     try {
         if (!isset($_GET['id_equipo'])) {
@@ -218,6 +247,9 @@ function obtenerMantenimientosPorEquipo() {
             throw new Exception("No hay conexión a la base de datos");
         }
         
+        // Verificar si existe la columna activo
+        $hasActivo = hasActivoColumn($db);
+        
         $sql = "SELECT m.id, m.fecha_mantenimiento, m.descripcion, m.observaciones, 
                 m.tecnico_responsable, m.id_estado_anterior, m.id_estado_nuevo,
                 td.nombre as tipo_demanda,
@@ -229,8 +261,14 @@ function obtenerMantenimientosPorEquipo() {
                 LEFT JOIN estados_equipo est_ant ON m.id_estado_anterior = est_ant.id
                 LEFT JOIN estados_equipo est_nue ON m.id_estado_nuevo = est_nue.id
                 LEFT JOIN usuarios u ON m.id_usuario_registro = u.id
-                WHERE m.id_equipo = :id_equipo
-                ORDER BY m.fecha_mantenimiento DESC";
+                WHERE m.id_equipo = :id_equipo";
+        
+        // Solo agregar filtro de activo si la columna existe
+        if ($hasActivo) {
+            $sql .= " AND m.activo = 1";
+        }
+        
+        $sql .= " ORDER BY m.fecha_mantenimiento DESC";
         
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':id_equipo', $id_equipo, PDO::PARAM_INT);
@@ -252,7 +290,9 @@ function obtenerMantenimientosPorEquipo() {
  * Eliminar mantenimiento
  */
 function eliminarMantenimiento() {
-    global $mantenimientoModel;
+    global $mantenimientoModel, $db;
+    
+    header('Content-Type: application/json; charset=UTF-8');
     
     try {
         $id = $_POST['id'] ?? null;
@@ -261,14 +301,20 @@ function eliminarMantenimiento() {
             throw new Exception("ID no proporcionado");
         }
         
+        // Obtener datos anteriores para auditoría
+        $datosAnteriores = $mantenimientoModel->getById($id);
+        
         // Eliminar usando SQL directo ya que el modelo no tiene método delete
-        global $db;
         $query = "UPDATE mantenimientos SET activo = 0 WHERE id = :id";
         $stmt = $db->prepare($query);
         $stmt->bindParam(':id', $id);
         $result = $stmt->execute();
         
         if ($result) {
+            // Registrar auditoría
+            $datosAnterioresLegibles = prepararDatosMantenimientoParaAuditoria($db, $datosAnteriores);
+            logAudit($db, 'mantenimientos', $id, 'DELETE', $datosAnterioresLegibles, null);
+            
             echo json_encode(['success' => true, 'message' => 'Mantenimiento eliminado exitosamente']);
         } else {
             throw new Exception("Error al eliminar el mantenimiento");

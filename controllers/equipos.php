@@ -1,7 +1,7 @@
-ï»¿<?php
+<?php
 /**
  * Controlador de Equipos
- * RF-03: GestiÃ³n completa de equipos con carga de imÃ¡genes
+ * RF-03: Gestión completa de equipos con carga de imágenes
  */
 
 require_once __DIR__ . '/../config/config.php';
@@ -9,22 +9,22 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/Equipo.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-// Iniciar sesiÃ³n
+// Iniciar sesión
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Verificar autenticaciÃ³n
+// Verificar autenticación
 if (!isLoggedIn()) {
     http_response_code(403);
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     echo json_encode(['error' => 'Acceso denegado']);
     exit;
 }
 
 // Configurar header JSON para respuestas AJAX
 if (isset($_POST['action']) || isset($_GET['action'])) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
 }
 
 $database = new Database();
@@ -64,7 +64,7 @@ switch ($action) {
     
     default:
         http_response_code(400);
-        echo json_encode(['error' => 'AcciÃ³n no vÃ¡lida']);
+        echo json_encode(['error' => 'Acción no válida']);
 }
 
 /**
@@ -119,7 +119,7 @@ function crearEquipo() {
             'id_usuario_creacion' => $_SESSION['user_id']
         ];
         
-        // Manejar imagen si se subiÃ³
+        // Manejar imagen si se subió
         if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
             $imagePath = uploadImage($_FILES['imagen']);
             if ($imagePath) {
@@ -131,7 +131,7 @@ function crearEquipo() {
         $result = $equipoModel->create($data);
         
         if ($result) {
-            // Preparar datos legibles para auditorÃ­a
+            // Preparar datos legibles para auditoría
             $datosLegibles = prepararDatosEquipoParaAuditoria($db, $data);
             
             logAudit($db, 'equipos', $result, 'INSERT', null, $datosLegibles);
@@ -154,7 +154,7 @@ function actualizarEquipo() {
         $id = intval($_POST['id']);
         
         if (empty($id)) {
-            throw new Exception("ID de equipo no vÃ¡lido");
+            throw new Exception("ID de equipo no válido");
         }
         
         $datosAnteriores = $equipoModel->getById($id);
@@ -217,7 +217,7 @@ function actualizarEquipo() {
         $result = $equipoModel->update($id, $data);
         
         if ($result) {
-            // Preparar datos legibles para auditorÃ­a
+            // Preparar datos legibles para auditoría
             $datosAnterioresLegibles = prepararDatosEquipoParaAuditoria($db, $datosAnteriores);
             $datosNuevosLegibles = prepararDatosEquipoParaAuditoria($db, $data);
             
@@ -241,7 +241,7 @@ function obtenerEquipo() {
         $id = intval($_GET['id'] ?? 0);
         
         if (empty($id)) {
-            throw new Exception("ID no vÃ¡lido");
+            throw new Exception("ID no válido");
         }
         
         $equipo = $equipoModel->getById($id);
@@ -265,7 +265,7 @@ function eliminarEquipo() {
         $id = intval($_POST['id'] ?? 0);
         
         if (empty($id)) {
-            throw new Exception("ID no vÃ¡lido");
+            throw new Exception("ID no válido");
         }
         
         $datosAnteriores = $equipoModel->getById($id);
@@ -296,7 +296,7 @@ function uploadImage($file) {
         mkdir($targetDir, 0755, true);
     }
     
-    // Verificar por extensiÃ³n (mÃ¡s confiable)
+    // Verificar por extensión (más confiable)
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     
@@ -304,16 +304,16 @@ function uploadImage($file) {
         throw new Exception("Tipo de archivo no permitido. Use: JPG, PNG, GIF o WEBP");
     }
     
-    // Verificar tambiÃ©n por MIME type si estÃ¡ disponible
+    // Verificar también por MIME type si está disponible
     $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!empty($file['type']) && !in_array($file['type'], $allowedMimes)) {
         // Log para debugging
         error_log("MIME type recibido: " . $file['type']);
-        // Pero no fallar, porque algunos navegadores no lo envÃ­an correctamente
+        // Pero no fallar, porque algunos navegadores no lo envían correctamente
     }
     
     if ($file['size'] > 5 * 1024 * 1024) {
-        throw new Exception("El archivo es demasiado grande. MÃ¡ximo 5MB");
+        throw new Exception("El archivo es demasiado grande. Máximo 5MB");
     }
     
     $fileName = uniqid('equipo_') . '.' . $extension;
@@ -346,7 +346,7 @@ function getModelos() {
     if ($id_marca) {
         $modelos = $equipoModel->getModelos($id_marca);
         error_log("Modelos encontrados: " . count($modelos));
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=UTF-8');
         echo json_encode($modelos);
         exit;
     } else {
@@ -357,7 +357,7 @@ function getModelos() {
 }
 
 /**
- * Obtener historial de auditorÃ­a de un equipo
+ * Obtener historial de auditoría de un equipo
  */
 function getAuditoria() {
     global $equipoModel;
@@ -373,7 +373,7 @@ function getAuditoria() {
     try {
         $auditoria = $equipoModel->getAuditoria($id_equipo);
         
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=UTF-8');
         echo json_encode($auditoria);
         exit;
     } catch (Exception $e) {
@@ -389,7 +389,7 @@ function getAuditoria() {
 function cambiarEstadoEquipo() {
     global $db;
     
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     try {
         $id = intval($_POST['id']);
@@ -425,7 +425,7 @@ function cambiarEstadoEquipo() {
         ]);
         
         if ($result) {
-            // Registrar auditorÃ­a con cambio de estado (guardando nombres, no IDs)
+            // Registrar auditoría con cambio de estado (guardando nombres, no IDs)
             logAudit($db, 'equipos', $id, 'UPDATE', 
                 ['estado' => $estadoAnteriorData['estado_nombre'] ?? 'Sin estado'], 
                 ['estado' => $estadoNuevoNombre, 'observacion' => $observacion]
@@ -443,7 +443,7 @@ function cambiarEstadoEquipo() {
 }
 
 /**
- * Preparar datos de equipo para auditorÃ­a (convertir IDs a nombres)
+ * Preparar datos de equipo para auditoría (convertir IDs a nombres)
  */
 function prepararDatosEquipoParaAuditoria($db, $data) {
     if (!$data) return null;
